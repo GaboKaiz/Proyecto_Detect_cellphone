@@ -31,6 +31,7 @@ db_config = {
 # Crear la carpeta para guardar imágenes si no existe
 os.makedirs("imagenes", exist_ok=True)
 
+
 # Conectar a la base de datos y crear la tabla si no existe
 def init_db():
     conn = mysql.connector.connect(**db_config)
@@ -47,12 +48,14 @@ def init_db():
     cursor.close()
     conn.close()
 
+
 init_db()
 
 # Cargar el modelo YOLOv8
 model = YOLO('yolov8s.pt')
 confidence_threshold = 0.8
 image_counter = 1  # Para nombrar imágenes como imagen1.jpg, imagen2.jpg, etc.
+
 
 # Función para guardar en la base de datos
 def save_detection(device, image_path):
@@ -66,6 +69,7 @@ def save_detection(device, image_path):
     conn.commit()
     cursor.close()
     conn.close()
+
 
 # Endpoint para iniciar la detección
 @app.get("/start_detection")
@@ -86,7 +90,7 @@ async def start_detection():
             if r.cls == 67 and r.conf[0] > confidence_threshold:  # Solo celulares
                 x1, y1, x2, y2 = map(int, r.xyxy[0].tolist())
                 cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                cv2.putText(frame, f'Celular {r.conf[0]:.2f}', (x1, y1-10),
+                cv2.putText(frame, f'Celular {r.conf[0]:.2f}', (x1, y1 - 10),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
                 
                 # Guardar imagen
@@ -105,6 +109,7 @@ async def start_detection():
     cv2.destroyAllWindows()
     return {"message": "Detección finalizada"}
 
+
 # Endpoint para obtener los datos de la base de datos
 @app.get("/detections")
 async def get_detections():
@@ -116,6 +121,7 @@ async def get_detections():
     conn.close()
     return detections
 
+
 # Endpoint para servir imágenes
 @app.get("/images/{image_name}")
 async def get_image(image_name: str):
@@ -123,6 +129,7 @@ async def get_image(image_name: str):
     if os.path.exists(image_path):
         return FileResponse(image_path)
     raise HTTPException(status_code=404, detail="Imagen no encontrada")
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

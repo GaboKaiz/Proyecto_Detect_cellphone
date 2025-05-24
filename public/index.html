@@ -1,43 +1,168 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
   <head>
-    <meta charset="utf-8" />
-    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
-    <meta
-      name="description"
-      content="Web site created using create-react-app"
-    />
-    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
-    <!--
-      manifest.json provides metadata used when your web app is installed on a
-      user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
-    -->
-    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
-    <!--
-      Notice the use of %PUBLIC_URL% in the tags above.
-      It will be replaced with the URL of the `public` folder during the build.
-      Only files inside the `public` folder can be referenced from the HTML.
-
-      Unlike "/favicon.ico" or "favicon.ico", "%PUBLIC_URL%/favicon.ico" will
-      work correctly both with client-side routing and a non-root public URL.
-      Learn how to configure a non-root public URL by running `npm run build`.
-    -->
-    <title>React App</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Detector de Celulares</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.7.2/axios.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.7/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
   </head>
-  <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
+  <body class="bg-gray-900 text-gray-100">
     <div id="root"></div>
-    <!--
-      This HTML file is a template.
-      If you open it directly in the browser, you will see an empty page.
+    <script type="text/babel">
+      function App() {
+        const [detections, setDetections] = React.useState([]);
+        const [loading, setLoading] = React.useState(false);
 
-      You can add webfonts, meta tags, or analytics to this file.
-      The build step will place the bundled scripts into the <body> tag.
+        // Obtener datos de la base de datos al cargar el componente
+        React.useEffect(() => {
+          fetchDetections();
+        }, []);
 
-      To begin the development, run `npm start` or `yarn start`.
-      To create a production bundle, use `npm run build` or `yarn build`.
-    -->
+        const fetchDetections = async () => {
+          try {
+            const response = await axios.get(
+              "http://localhost:8000/detections"
+            );
+            setDetections(response.data);
+          } catch (error) {
+            console.error("Error al obtener detecciones:", error);
+          }
+        };
+
+        // Iniciar la detección
+        const startDetection = async () => {
+          setLoading(true);
+          try {
+            await axios.get("http://localhost:8000/start_detection");
+            fetchDetections();
+          } catch (error) {
+            console.error("Error al iniciar detección:", error);
+          }
+          setLoading(false);
+        };
+
+        return (
+          <div className="min-h-screen p-6">
+            {/* Encabezado */}
+            <header className="mb-8 text-center">
+              <h1 className="text-4xl font-bold text-indigo-400">
+                Detector de Celulares
+              </h1>
+              <p className="text-gray-400 mt-2">
+                Monitoreo en tiempo real de dispositivos móviles
+              </p>
+            </header>
+
+            {/* Dashboard */}
+            <div className="max-w-7xl mx-auto">
+              {/* Botón de acción */}
+              <div className="mb-6">
+                <button
+                  onClick={startDetection}
+                  disabled={loading}
+                  className={`px-6 py-3 rounded-lg font-semibold text-white transition-all duration-300 ${
+                    loading
+                      ? "bg-gray-600 cursor-not-allowed"
+                      : "bg-indigo-600 hover:bg-indigo-700"
+                  }`}
+                >
+                  {loading ? "Detectando..." : "Iniciar Detección"}
+                </button>
+              </div>
+
+              {/* Estadísticas rápidas */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
+                  <h3 className="text-lg font-semibold text-indigo-300">
+                    Total Detecciones
+                  </h3>
+                  <p className="text-3xl font-bold text-white">
+                    {detections.length}
+                  </p>
+                </div>
+                <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
+                  <h3 className="text-lg font-semibold text-indigo-300">
+                    Última Detección
+                  </h3>
+                  <p className="text-xl text-white">
+                    {detections.length > 0
+                      ? new Date(detections[0].date_time).toLocaleString()
+                      : "N/A"}
+                  </p>
+                </div>
+                <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
+                  <h3 className="text-lg font-semibold text-indigo-300">
+                    Estado
+                  </h3>
+                  <p className="text-xl text-white">
+                    {loading ? "Activo" : "Inactivo"}
+                  </p>
+                </div>
+              </div>
+
+              {/* Tabla de detecciones */}
+              <div className="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+                <h2 className="text-2xl font-semibold text-indigo-300 p-6">
+                  Detecciones Guardadas
+                </h2>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead className="bg-gray-700">
+                      <tr>
+                        <th className="p-4">ID</th>
+                        <th className="p-4">Dispositivo</th>
+                        <th className="p-4">Fecha y Hora</th>
+                        <th className="p-4">Imagen</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {detections.length === 0 ? (
+                        <tr>
+                          <td
+                            colSpan="4"
+                            className="p-4 text-center text-gray-400"
+                          >
+                            No hay detecciones disponibles
+                          </td>
+                        </tr>
+                      ) : (
+                        detections.map((detection) => (
+                          <tr
+                            key={detection.id}
+                            className="border-t border-gray-700 hover:bg-gray-700"
+                          >
+                            <td className="p-4">{detection.id}</td>
+                            <td className="p-4">{detection.device}</td>
+                            <td className="p-4">
+                              {new Date(detection.date_time).toLocaleString()}
+                            </td>
+                            <td className="p-4">
+                              <img
+                                src={`http://localhost:8000/images/${
+                                  detection.image_path.split("/")[1]
+                                }`}
+                                alt="Detección"
+                                className="w-20 h-20 object-cover rounded"
+                              />
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      const root = ReactDOM.createRoot(document.getElementById("root"));
+      root.render(<App />);
+    </script>
   </body>
 </html>
